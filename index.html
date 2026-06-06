@@ -110,6 +110,13 @@
 
 <div class="container">
     <h2>Data Input (Study Hours)</h2>
+    
+    <div style="margin-bottom: 15px; display: flex; gap: 10px;">
+        <input type="file" id="csvFileInput" accept=".csv" style="display: none;" onchange="handleFileUpload(event)">
+        <button onclick="document.getElementById('csvFileInput').click()" style="background-color: #10b981; font-size: 14px;">Upload CSV</button>
+        <button onclick="downloadCSV()" style="background-color: #6b7280; font-size: 14px;">Download CSV</button>
+    </div>
+
     <p>Enter a comma-separated list of numbers below:</p>
     <textarea id="dataInput">12, 15, 8, 10, 20, 25, 14, 18, 5, 30, 22, 16, 11, 9, 24, 19, 13, 17, 21, 28, 7, 26, 23, 27, 6, 29, 15, 12, 18, 20</textarea>
     <button onclick="processData()">Calculate & Update Charts</button>
@@ -128,6 +135,49 @@
 <script>
     // Run the script initially to show the default data
     processData();
+
+    // NEW: Function to handle CSV Upload
+    function handleFileUpload(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            const text = e.target.result;
+            // Convert any newlines or mixed spacing into standard comma separation
+            const cleanedText = text.replace(/[\n\r]+/g, ',').replace(/,\s*,/g, ',');
+            document.getElementById('dataInput').value = cleanedText;
+            processData(); // Automatically update charts after loading
+        };
+        reader.readAsText(file);
+        event.target.value = ''; // Reset input so the same file can be uploaded again
+    }
+
+    // NEW: Function to handle CSV Download
+    function downloadCSV() {
+        const inputRaw = document.getElementById('dataInput').value;
+        const data = inputRaw.split(',')
+            .map(d => parseFloat(d.trim()))
+            .filter(d => !isNaN(d));
+            
+        if (data.length === 0) {
+            alert("No valid data to download.");
+            return;
+        }
+
+        // Format as a single column CSV
+        const csvContent = data.join('\n');
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        
+        const link = document.createElement("a");
+        link.setAttribute("href", url);
+        link.setAttribute("download", "statistics_data.csv");
+        link.style.visibility = 'hidden';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    }
 
     function processData() {
         // 1. Get string from textarea and convert to array of numbers
