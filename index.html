@@ -141,18 +141,18 @@
             color: var(--accent-blue-hover);
         }
 
-        /* NEW: Highlight styling for the Mean */
-        .highlight-mean {
+        /* NEW: Highlight styling for the Median */
+        .highlight-median {
             background-color: rgba(59, 130, 246, 0.15); /* Slight blue tint */
             border: 1px solid var(--accent-blue);
             box-shadow: 0 0 12px rgba(59, 130, 246, 0.4); /* Glow effect */
             transform: scale(1.08); /* Pop out slightly */
         }
-        .highlight-mean .stat-value {
+        .highlight-median .stat-value {
             color: #93c5fd; /* Even brighter blue text */
             font-size: 1.4rem;
         }
-        .highlight-mean .stat-label {
+        .highlight-median .stat-label {
             color: var(--text-main); /* Brighter label */
             font-weight: bold;
         }
@@ -365,9 +365,9 @@
             "Max": d3.max(data)
         };
 
-        // NEW: Check for the 'Mean' label to apply the highlight class
+        // UPDATED: Target 'Median' instead of 'Mean' for the highlight class
         const html = Object.entries(stats).map(([label, value]) => `
-            <div class="stat-box ${label === 'Mean' ? 'highlight-mean' : ''}">
+            <div class="stat-box ${label === 'Median' ? 'highlight-median' : ''}">
                 <div class="stat-label">${label}</div>
                 <div class="stat-value">${value}</div>
             </div>
@@ -461,7 +461,7 @@
             .datum(density)
             .attr("class", "density-curve")
             .attr("d", d3.line()
-                .curve(d3.curveBasis) // Makes the line smooth
+                .curve(d3.curveBasis) 
                 .x(d => x(d[0]))
                 .y(d => y(d[1] * scaleFactor))
             );
