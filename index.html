@@ -31,7 +31,9 @@
             box-sizing: border-box;
             resize: vertical;
         }
-        button {
+        
+        /* Standard Calculate Button */
+        .calc-button {
             background-color: #3b82f6;
             color: white;
             border: none;
@@ -41,9 +43,56 @@
             font-weight: bold;
             font-size: 16px;
         }
-        button:hover {
+        .calc-button:hover {
             background-color: #2563eb;
         }
+
+        /* NEW: Physical-style Action Buttons for CSV */
+        .action-button {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            padding: 12px 24px;
+            font-size: 16px;
+            font-weight: bold;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            box-shadow: 0 4px 0 rgba(0,0,0,0.2); /* Creates the 3D physical edge */
+            transition: all 0.1s ease;
+            margin-bottom: 4px; /* Room for the press effect */
+        }
+        
+        /* The press-down animation */
+        .action-button:active {
+            transform: translateY(4px);
+            box-shadow: 0 0 0 rgba(0,0,0,0.2);
+        }
+
+        .btn-upload {
+            background-color: #10b981;
+            box-shadow: 0 4px 0 #047857;
+        }
+        .btn-upload:hover {
+            background-color: #059669;
+        }
+        .btn-upload:active {
+            box-shadow: 0 0 0 #047857;
+        }
+
+        .btn-download {
+            background-color: #6b7280;
+            box-shadow: 0 4px 0 #4b5563;
+        }
+        .btn-download:hover {
+            background-color: #4b5563;
+        }
+        .btn-download:active {
+            box-shadow: 0 0 0 #4b5563;
+        }
+
         .stats-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
@@ -111,15 +160,19 @@
 <div class="container">
     <h2>Data Input (Study Hours)</h2>
     
-    <div style="margin-bottom: 15px; display: flex; gap: 10px;">
+    <div style="margin-bottom: 20px; display: flex; gap: 15px;">
         <input type="file" id="csvFileInput" accept=".csv" style="display: none;" onchange="handleFileUpload(event)">
-        <button onclick="document.getElementById('csvFileInput').click()" style="background-color: #10b981; font-size: 14px;">Upload CSV</button>
-        <button onclick="downloadCSV()" style="background-color: #6b7280; font-size: 14px;">Download CSV</button>
+        <button class="action-button btn-upload" onclick="document.getElementById('csvFileInput').click()">
+            📁 Upload CSV
+        </button>
+        <button class="action-button btn-download" onclick="downloadCSV()">
+            💾 Download CSV
+        </button>
     </div>
 
     <p>Enter a comma-separated list of numbers below:</p>
     <textarea id="dataInput">12, 15, 8, 10, 20, 25, 14, 18, 5, 30, 22, 16, 11, 9, 24, 19, 13, 17, 21, 28, 7, 26, 23, 27, 6, 29, 15, 12, 18, 20</textarea>
-    <button onclick="processData()">Calculate & Update Charts</button>
+    <button class="calc-button" onclick="processData()">Calculate & Update Charts</button>
 
     <div class="stats-grid" id="statsOutput"></div>
 
@@ -136,7 +189,6 @@
     // Run the script initially to show the default data
     processData();
 
-    // NEW: Function to handle CSV Upload
     function handleFileUpload(event) {
         const file = event.target.files[0];
         if (!file) return;
@@ -147,13 +199,12 @@
             // Convert any newlines or mixed spacing into standard comma separation
             const cleanedText = text.replace(/[\n\r]+/g, ',').replace(/,\s*,/g, ',');
             document.getElementById('dataInput').value = cleanedText;
-            processData(); // Automatically update charts after loading
+            processData(); 
         };
         reader.readAsText(file);
-        event.target.value = ''; // Reset input so the same file can be uploaded again
+        event.target.value = ''; 
     }
 
-    // NEW: Function to handle CSV Download
     function downloadCSV() {
         const inputRaw = document.getElementById('dataInput').value;
         const data = inputRaw.split(',')
@@ -180,28 +231,24 @@
     }
 
     function processData() {
-        // 1. Get string from textarea and convert to array of numbers
         const inputRaw = document.getElementById('dataInput').value;
         const data = inputRaw.split(',')
             .map(d => parseFloat(d.trim()))
-            .filter(d => !isNaN(d)); // Remove invalid text
+            .filter(d => !isNaN(d)); 
 
         if (data.length === 0) {
             alert("Please enter valid numerical data separated by commas.");
             return;
         }
 
-        // 2. Fire calculation and chart functions
         calculateStats(data);
         drawHistogram(data);
         drawBoxplot(data);
     }
 
     function calculateStats(data) {
-        // Sort data explicitly for quartiles
         const sorted = [...data].sort(d3.ascending);
         
-        // Use D3's built in math functions
         const stats = {
             "Count (n)": data.length,
             "Mean": d3.mean(data).toFixed(2),
@@ -213,7 +260,6 @@
             "Max": d3.max(data)
         };
 
-        // Render to DOM
         const html = Object.entries(stats).map(([label, value]) => `
             <div class="stat-box">
                 <div class="stat-label">${label}</div>
@@ -225,7 +271,6 @@
     }
 
     function drawHistogram(data) {
-        // Clear previous chart
         d3.select("#histogram svg").remove();
 
         const margin = {top: 20, right: 30, bottom: 40, left: 40},
@@ -238,7 +283,6 @@
           .append("g")
             .attr("transform", `translate(${margin.left},${margin.top})`);
 
-        // X Axis setup
         const x = d3.scaleLinear()
             .domain([d3.min(data) - 2, d3.max(data) + 2])
             .range([0, width]);
@@ -247,14 +291,12 @@
             .attr("transform", `translate(0,${height})`)
             .call(d3.axisBottom(x));
 
-        // Create bins using D3
         const histogram = d3.bin()
             .domain(x.domain())
-            .thresholds(x.ticks(10)); // Request ~10 bins
+            .thresholds(x.ticks(10)); 
 
         const bins = histogram(data);
 
-        // Y Axis setup based on max bin frequency
         const y = d3.scaleLinear()
             .range([height, 0])
             .domain([0, d3.max(bins, d => d.length) + 1]);
@@ -262,7 +304,6 @@
         svg.append("g")
             .call(d3.axisLeft(y).ticks(5));
 
-        // Draw bars
         const bar = svg.selectAll(".bar")
             .data(bins)
             .join("g")
@@ -271,11 +312,9 @@
 
         bar.append("rect")
             .attr("x", 1)
-            // Handle edge case where width might be negative due to scales
             .attr("width", d => Math.max(0, x(d.x1) - x(d.x0) - 1)) 
             .attr("height", d => height - y(d.length));
 
-        // Add frequency labels on top of bars
         bar.append("text")
             .attr("dy", ".75em")
             .attr("y", -15)
@@ -284,7 +323,6 @@
     }
 
     function drawBoxplot(data) {
-        // Clear previous chart
         d3.select("#boxplot svg").remove();
 
         const margin = {top: 20, right: 30, bottom: 40, left: 40},
@@ -297,7 +335,6 @@
           .append("g")
             .attr("transform", `translate(${margin.left},${margin.top})`);
 
-        // Compute summary statistics
         const sorted = [...data].sort(d3.ascending);
         const q1 = d3.quantile(sorted, 0.25);
         const median = d3.median(sorted);
@@ -305,7 +342,6 @@
         const min = d3.min(data);
         const max = d3.max(data);
 
-        // X Axis matches histogram for easy comparison
         const x = d3.scaleLinear()
             .domain([min - 2, max + 2])
             .range([0, width]);
@@ -317,7 +353,6 @@
         const center = height / 2;
         const boxHeight = 40;
 
-        // Draw main horizontal whisker line
         svg.append("line")
             .attr("class", "whisker")
             .attr("x1", x(min))
@@ -325,7 +360,6 @@
             .attr("y1", center)
             .attr("y2", center);
 
-        // Draw the Interquartile Range (IQR) Box
         svg.append("rect")
             .attr("class", "box")
             .attr("x", x(q1))
@@ -333,7 +367,6 @@
             .attr("width", x(q3) - x(q1))
             .attr("height", boxHeight);
 
-        // Draw vertical lines for min, median, and max
         const lines = [min, median, max];
         svg.selectAll(".vertLines")
             .data(lines)
