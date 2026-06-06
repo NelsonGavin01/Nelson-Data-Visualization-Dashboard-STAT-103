@@ -47,7 +47,7 @@
             background-color: #2563eb;
         }
 
-        /* NEW: Physical-style Action Buttons for CSV */
+        /* Physical-style Action Buttons for CSV */
         .action-button {
             display: inline-flex;
             align-items: center;
@@ -60,9 +60,9 @@
             border: none;
             border-radius: 6px;
             cursor: pointer;
-            box-shadow: 0 4px 0 rgba(0,0,0,0.2); /* Creates the 3D physical edge */
+            box-shadow: 0 4px 0 rgba(0,0,0,0.2); 
             transition: all 0.1s ease;
-            margin-bottom: 4px; /* Room for the press effect */
+            margin-bottom: 4px; 
         }
         
         /* The press-down animation */
@@ -205,6 +205,7 @@
         event.target.value = ''; 
     }
 
+    // UPDATED: Advanced CSV Download formatting
     function downloadCSV() {
         const inputRaw = document.getElementById('dataInput').value;
         const data = inputRaw.split(',')
@@ -216,14 +217,78 @@
             return;
         }
 
-        // Format as a single column CSV
-        const csvContent = data.join('\n');
+        // 1. Re-calculate Summary Statistics for the spreadsheet
+        const sorted = [...data].sort(d3.ascending);
+        const stats = {
+            "Count (n)": data.length,
+            "Mean": d3.mean(data).toFixed(2),
+            "Median": d3.median(data).toFixed(2),
+            "Std Dev": d3.deviation(data) ? d3.deviation(data).toFixed(2) : "0",
+            "Min": d3.min(data),
+            "Q1": d3.quantile(sorted, 0.25).toFixed(2),
+            "Q3": d3.quantile(sorted, 0.75).toFixed(2),
+            "Max": d3.max(data)
+        };
+        const statEntries = Object.entries(stats);
+
+        // 2. Re-calculate Histogram Bins for the spreadsheet
+        const x = d3.scaleLinear()
+            .domain([d3.min(data) - 2, d3.max(data) + 2]);
+        const histogram = d3.bin()
+            .domain(x.domain())
+            .thresholds(x.ticks(10));
+        const bins = histogram(data);
+
+        // 3. Construct the organized CSV Rows
+        let csvRows = [];
+        
+        // Add Headers for the three distinct sections
+        csvRows.push("Raw Data,,,Summary Statistics,Value,,,Histogram Bin Range,Frequency");
+
+        // Find out how many rows we need based on the longest column
+        const maxRows = Math.max(data.length, statEntries.length, bins.length);
+
+        for (let i = 0; i < maxRows; i++) {
+            let row = [];
+
+            // Column A: Raw Data
+            row.push(i < data.length ? data[i] : "");
+            row.push(""); // Col B (Blank Spacing)
+            row.push(""); // Col C (Blank Spacing)
+
+            // Column D & E: Summary Statistics
+            if (i < statEntries.length) {
+                row.push(statEntries[i][0]); // Stat Name
+                row.push(statEntries[i][1]); // Stat Value
+            } else {
+                row.push("");
+                row.push("");
+            }
+            row.push(""); // Col F (Blank Spacing)
+            row.push(""); // Col G (Blank Spacing)
+
+            // Column H & I: Histogram Bins
+            if (i < bins.length) {
+                let bin = bins[i];
+                row.push(`${bin.x0} to ${bin.x1}`); // Bin Range
+                row.push(bin.length);               // Bin Frequency Count
+            } else {
+                row.push("");
+                row.push("");
+            }
+
+            // Combine the row array into a comma-separated string
+            csvRows.push(row.join(","));
+        }
+
+        // 4. Trigger Download (Prepended with \uFEFF to ensure Excel reads UTF-8 correctly)
+        const csvContent = "\uFEFF" + csvRows.join('\n');
         const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
         const url = URL.createObjectURL(blob);
         
         const link = document.createElement("a");
         link.setAttribute("href", url);
-        link.setAttribute("download", "statistics_data.csv");
+        link.setAttribute("download", "statistics_dashboard_export.csv");
         link.style.visibility = 'hidden';
         document.body.appendChild(link);
         link.click();
