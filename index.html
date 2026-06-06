@@ -3,38 +3,64 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Statistics & Data Visualizer</title>
+    <title>Statistics & Data Visualizer - Dark Mode</title>
     <script src="https://d3js.org/d3.v7.min.js"></script>
     <style>
+        /* DARK MODE CORE VARIABLES */
+        :root {
+            --bg-page: #111827;       /* Deep Gray/Black */
+            --bg-panel: #1f2937;      /* Dark Gray */
+            --bg-input: #374151;      /* Lighter Dark Gray */
+            --text-main: #f9fafb;     /* Off White */
+            --text-muted: #9ca3af;    /* Light Gray */
+            --border-color: #374151;  
+            --accent-blue: #3b82f6;
+            --accent-blue-hover: #60a5fa;
+        }
+
         body {
             font-family: system-ui, -apple-system, sans-serif;
             max-width: 900px;
             margin: 0 auto;
             padding: 20px;
-            background-color: #f9fafb;
-            color: #1f2937;
+            background-color: var(--bg-page);
+            color: var(--text-main);
         }
+
         .container {
-            background: white;
-            padding: 20px;
+            background: var(--bg-panel);
+            padding: 25px;
             border-radius: 8px;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
         }
+
+        h2, h3, p {
+            color: var(--text-main);
+            margin-top: 0;
+        }
+
         textarea {
             width: 100%;
             height: 80px;
             padding: 10px;
             margin-bottom: 10px;
-            border: 1px solid #d1d5db;
+            background-color: var(--bg-input);
+            color: var(--text-main);
+            border: 1px solid var(--border-color);
             border-radius: 4px;
             font-family: monospace;
             box-sizing: border-box;
             resize: vertical;
         }
         
+        textarea:focus {
+            outline: none;
+            border-color: var(--accent-blue);
+        }
+
         /* Standard Calculate Button */
         .calc-button {
-            background-color: #3b82f6;
+            background-color: var(--accent-blue);
             color: white;
             border: none;
             padding: 10px 20px;
@@ -42,9 +68,10 @@
             cursor: pointer;
             font-weight: bold;
             font-size: 16px;
+            transition: background-color 0.2s;
         }
         .calc-button:hover {
-            background-color: #2563eb;
+            background-color: var(--accent-blue-hover);
         }
 
         /* Physical-style Action Buttons for CSV */
@@ -60,37 +87,29 @@
             border: none;
             border-radius: 6px;
             cursor: pointer;
-            box-shadow: 0 4px 0 rgba(0,0,0,0.2); 
             transition: all 0.1s ease;
             margin-bottom: 4px; 
         }
         
-        /* The press-down animation */
         .action-button:active {
             transform: translateY(4px);
-            box-shadow: 0 0 0 rgba(0,0,0,0.2);
+            box-shadow: 0 0 0 rgba(0,0,0,0) !important;
         }
 
         .btn-upload {
-            background-color: #10b981;
-            box-shadow: 0 4px 0 #047857;
+            background-color: #059669; /* Darker Emerald */
+            box-shadow: 0 4px 0 #064e3b; /* Deep Emerald shadow */
         }
         .btn-upload:hover {
-            background-color: #059669;
-        }
-        .btn-upload:active {
-            box-shadow: 0 0 0 #047857;
+            background-color: #10b981;
         }
 
         .btn-download {
-            background-color: #6b7280;
-            box-shadow: 0 4px 0 #4b5563;
+            background-color: #4b5563; 
+            box-shadow: 0 4px 0 #111827; /* Near black shadow */
         }
         .btn-download:hover {
-            background-color: #4b5563;
-        }
-        .btn-download:active {
-            box-shadow: 0 0 0 #4b5563;
+            background-color: #6b7280;
         }
 
         .stats-grid {
@@ -99,7 +118,8 @@
             gap: 15px;
             margin: 20px 0;
             padding: 15px;
-            background-color: #f3f4f6;
+            background-color: var(--bg-page); /* Inset look */
+            border: 1px solid var(--border-color);
             border-radius: 6px;
         }
         .stat-box {
@@ -107,50 +127,64 @@
         }
         .stat-label {
             font-size: 0.875rem;
-            color: #4b5563;
+            color: var(--text-muted);
+            margin-bottom: 4px;
         }
         .stat-value {
             font-size: 1.25rem;
             font-weight: bold;
-            color: #111827;
+            color: var(--accent-blue-hover);
         }
+
         .chart-container {
             margin-top: 30px;
-            border: 1px solid #e5e7eb;
+            border: 1px solid var(--border-color);
             border-radius: 6px;
             padding: 15px;
-            background: white;
+            background: var(--bg-page);
         }
-        h3 {
-            margin-top: 0;
-            font-size: 1.1rem;
-            color: #374151;
-        }
-        /* SVG Styling */
+
+        /* DARK MODE D3.JS SVG STYLING */
         svg {
             width: 100%;
             height: auto;
             overflow: visible;
         }
+        
+        /* Axes lines and ticks */
+        .domain, .tick line {
+            stroke: #4b5563; 
+        }
+        /* Axes text labels */
+        .tick text {
+            fill: #9ca3af; 
+            font-family: system-ui, sans-serif;
+            font-size: 11px;
+        }
+
+        /* Histogram Bars */
         .bar rect {
-            fill: #60a5fa;
+            fill: var(--accent-blue);
             transition: fill 0.2s;
         }
         .bar rect:hover {
-            fill: #2563eb;
+            fill: var(--accent-blue-hover);
         }
         .bar text {
-            fill: #1f2937;
+            fill: var(--text-main);
             font-size: 12px;
+            font-weight: bold;
             text-anchor: middle;
         }
+
+        /* Boxplot Elements */
         .box {
-            fill: #bfdbfe;
-            stroke: #2563eb;
+            fill: #1e3a8a; /* Deep blue fill */
+            stroke: var(--accent-blue-hover);
             stroke-width: 2px;
         }
         .whisker, .median {
-            stroke: #2563eb;
+            stroke: var(--accent-blue-hover);
             stroke-width: 2px;
         }
     </style>
@@ -170,7 +204,7 @@
         </button>
     </div>
 
-    <p>Enter a comma-separated list of numbers below:</p>
+    <p style="color: var(--text-muted); margin-bottom: 8px;">Enter a comma-separated list of numbers below:</p>
     <textarea id="dataInput">12, 15, 8, 10, 20, 25, 14, 18, 5, 30, 22, 16, 11, 9, 24, 19, 13, 17, 21, 28, 7, 26, 23, 27, 6, 29, 15, 12, 18, 20</textarea>
     <button class="calc-button" onclick="processData()">Calculate & Update Charts</button>
 
@@ -196,7 +230,6 @@
         const reader = new FileReader();
         reader.onload = function(e) {
             const text = e.target.result;
-            // Convert any newlines or mixed spacing into standard comma separation
             const cleanedText = text.replace(/[\n\r]+/g, ',').replace(/,\s*,/g, ',');
             document.getElementById('dataInput').value = cleanedText;
             processData(); 
@@ -205,7 +238,7 @@
         event.target.value = ''; 
     }
 
-    // UPDATED: Advanced CSV Download formatting
+    // UPDATED: Completely locked-down CSV mapping to guarantee columns in Excel
     function downloadCSV() {
         const inputRaw = document.getElementById('dataInput').value;
         const data = inputRaw.split(',')
@@ -217,7 +250,7 @@
             return;
         }
 
-        // 1. Re-calculate Summary Statistics for the spreadsheet
+        // 1. Re-calculate Summary Statistics
         const sorted = [...data].sort(d3.ascending);
         const stats = {
             "Count (n)": data.length,
@@ -231,57 +264,44 @@
         };
         const statEntries = Object.entries(stats);
 
-        // 2. Re-calculate Histogram Bins for the spreadsheet
-        const x = d3.scaleLinear()
-            .domain([d3.min(data) - 2, d3.max(data) + 2]);
-        const histogram = d3.bin()
-            .domain(x.domain())
-            .thresholds(x.ticks(10));
+        // 2. Re-calculate Histogram Bins
+        const x = d3.scaleLinear().domain([d3.min(data) - 2, d3.max(data) + 2]);
+        const histogram = d3.bin().domain(x.domain()).thresholds(x.ticks(10));
         const bins = histogram(data);
 
-        // 3. Construct the organized CSV Rows
+        // 3. Construct explicitly aligned columns
         let csvRows = [];
         
-        // Add Headers for the three distinct sections
-        csvRows.push("Raw Data,,,Summary Statistics,Value,,,Histogram Bin Range,Frequency");
+        // Exact headers mapping to exact indices in our loop below
+        let headers = ["Raw Input", "", "Statistic Category", "Statistic Value", "", "Bin Range (Min to Max)", "Frequency Count"];
+        csvRows.push(headers.join(","));
 
-        // Find out how many rows we need based on the longest column
+        // Get the maximum length among our three data lists so the loop captures everything
         const maxRows = Math.max(data.length, statEntries.length, bins.length);
 
         for (let i = 0; i < maxRows; i++) {
-            let row = [];
+            // Safely fetch data for each column, or leave blank if that specific list has run out
+            let colData     = i < data.length ? data[i] : "";
+            let colStatName = i < statEntries.length ? statEntries[i][0] : "";
+            let colStatVal  = i < statEntries.length ? statEntries[i][1] : "";
+            let colBinRange = i < bins.length ? `${bins[i].x0} to ${bins[i].x1}` : "";
+            let colBinFreq  = i < bins.length ? bins[i].length : "";
 
-            // Column A: Raw Data
-            row.push(i < data.length ? data[i] : "");
-            row.push(""); // Col B (Blank Spacing)
-            row.push(""); // Col C (Blank Spacing)
-
-            // Column D & E: Summary Statistics
-            if (i < statEntries.length) {
-                row.push(statEntries[i][0]); // Stat Name
-                row.push(statEntries[i][1]); // Stat Value
-            } else {
-                row.push("");
-                row.push("");
-            }
-            row.push(""); // Col F (Blank Spacing)
-            row.push(""); // Col G (Blank Spacing)
-
-            // Column H & I: Histogram Bins
-            if (i < bins.length) {
-                let bin = bins[i];
-                row.push(`${bin.x0} to ${bin.x1}`); // Bin Range
-                row.push(bin.length);               // Bin Frequency Count
-            } else {
-                row.push("");
-                row.push("");
-            }
-
-            // Combine the row array into a comma-separated string
+            // Build the row exactly matching the header structure
+            let row = [
+                colData, 
+                "",            // Empty spacer column
+                colStatName, 
+                colStatVal, 
+                "",            // Empty spacer column
+                colBinRange, 
+                colBinFreq
+            ];
+            
             csvRows.push(row.join(","));
         }
 
-        // 4. Trigger Download (Prepended with \uFEFF to ensure Excel reads UTF-8 correctly)
+        // 4. Trigger Download with UTF-8 BOM so Excel forces standard formatting
         const csvContent = "\uFEFF" + csvRows.join('\n');
         const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
         const url = URL.createObjectURL(blob);
