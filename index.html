@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Statistics & Data Visualizer</title>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <style>
+        body {
+            font-family: system-ui, -apple-system, sans-serif;
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f9fafb;
+            color: #1f2937;
+        }
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        textarea {
+            width: 100%;
+            height: 80px;
+            padding: 10px;
+            margin-bottom: 10px;
+            border: 1px solid #d1d5db;
+            border-radius: 4px;
+            font-family: monospace;
+            box-sizing: border-box;
+            resize: vertical;
+        }
+        button {
+            background-color: #3b82f6;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 16px;
+        }
+        button:hover {
+            background-color: #2563eb;
+        }
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+            gap: 15px;
+            margin: 20px 0;
+            padding: 15px;
+            background-color: #f3f4f6;
+            border-radius: 6px;
+        }
+        .stat-box {
+            text-align: center;
+        }
+        .stat-label {
+            font-size: 0.875rem;
+            color: #4b5563;
+        }
+        .stat-value {
+            font-size: 1.25rem;
+            font-weight: bold;
+            color: #111827;
+        }
+        .chart-container {
+            margin-top: 30px;
+            border: 1px solid #e5e7eb;
+            border-radius: 6px;
+            padding: 15px;
+            background: white;
+        }
+        h3 {
+            margin-top: 0;
+            font-size: 1.1rem;
+            color: #374151;
+        }
+        /* SVG Styling */
+        svg {
+            width: 100%;
+            height: auto;
+            overflow: visible;
+        }
+        .bar rect {
+            fill: #60a5fa;
+            transition: fill 0.2s;
+        }
+        .bar rect:hover {
+            fill: #2563eb;
+        }
+        .bar text {
+            fill: #1f2937;
+            font-size: 12px;
+            text-anchor: middle;
+        }
+        .box {
+            fill: #bfdbfe;
+            stroke: #2563eb;
+            stroke-width: 2px;
+        }
+        .whisker, .median {
+            stroke: #2563eb;
+            stroke-width: 2px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>Data Input (Study Hours)</h2>
+    <p>Enter a comma-separated list of numbers below:</p>
+    <textarea id="dataInput">12, 15, 8, 10, 20, 25, 14, 18, 5, 30, 22, 16, 11, 9, 24, 19, 13, 17, 21, 28, 7, 26, 23, 27, 6, 29, 15, 12, 18, 20</textarea>
+    <button onclick="processData()">Calculate & Update Charts</button>
+
+    <div class="stats-grid" id="statsOutput"></div>
+
+    <div class="chart-container" id="histogram">
+        <h3>Histogram (Frequency Distribution)</h3>
+    </div>
+    
+    <div class="chart-container" id="boxplot">
+        <h3>Boxplot (Data Spread)</h3>
+    </div>
+</div>
+
+<script>
+    // Run the script initially to show the default data
+    processData();
+
+    function processData() {
+        // 1. Get string from textarea and convert to array of numbers
+        const inputRaw = document.getElementById('dataInput').value;
+        const data = inputRaw.split(',')
+            .map(d => parseFloat(d.trim()))
+            .filter(d => !isNaN(d)); // Remove invalid text
+
+        if (data.length === 0) {
+            alert("Please enter valid numerical data separated by commas.");
+            return;
+        }
+
+        // 2. Fire calculation and chart functions
+        calculateStats(data);
+        drawHistogram(data);
+        drawBoxplot(data);
+    }
+
+    function calculateStats(data) {
+        // Sort data explicitly for quartiles
+        const sorted = [...data].sort(d3.ascending);
+        
+        // Use D3's built in math functions
+        const stats = {
+            "Count (n)": data.length,
+            "Mean": d3.mean(data).toFixed(2),
+            "Median": d3.median(data).toFixed(2),
+            "Std Dev": d3.deviation(data) ? d3.deviation(data).toFixed(2) : "0",
+            "Min": d3.min(data),
+            "Q1": d3.quantile(sorted, 0.25).toFixed(2),
+            "Q3": d3.quantile(sorted, 0.75).toFixed(2),
+            "Max": d3.max(data)
+        };
+
+        // Render to DOM
+        const html = Object.entries(stats).map(([label, value]) => `
+            <div class="stat-box">
+                <div class="stat-label">${label}</div>
+                <div class="stat-value">${value}</div>
+            </div>
+        `).join('');
+
+        document.getElementById('statsOutput').innerHTML = html;
+    }
+
+    function drawHistogram(data) {
+        // Clear previous chart
+        d3.select("#histogram svg").remove();
+
+        const margin = {top: 20, right: 30, bottom: 40, left: 40},
+              width = 800 - margin.left - margin.right,
+              height = 300 - margin.top - margin.bottom;
+
+        const svg = d3.select("#histogram")
+          .append("svg")
+            .attr("viewBox", `0 0 ${width + margin.left + margin.right} ${height + margin.top + margin.bottom}`)
+          .append("g")
+            .attr("transform", `translate(${margin.left},${margin.top})`);
+
+        // X Axis setup
+        const x = d3.scaleLinear()
+            .domain([d3.min(data) - 2, d3.max(data) + 2])
+            .range([0, width]);
+
+        svg.append("g")
+            .attr("transform", `translate(0,${height})`)
+            .call(d3.axisBottom(x));
+
+        // Create bins using D3
+        const histogram = d3.bin()
+            .domain(x.domain())
+            .thresholds(x.ticks(10)); // Request ~10 bins
+
+        const bins = histogram(data);
+
+        // Y Axis setup based on max bin frequency
+        const y = d3.scaleLinear()
+            .range([height, 0])
+            .domain([0, d3.max(bins, d => d.length) + 1]);
+
+        svg.append("g")
+            .call(d3.axisLeft(y).ticks(5));
+
+        // Draw bars
+        const bar = svg.selectAll(".bar")
+            .data(bins)
+            .join("g")
+            .attr("class", "bar")
+            .attr("transform", d => `translate(${x(d.x0)},${y(d.length)})`);
+
+        bar.append("rect")
+            .attr("x", 1)
+            // Handle edge case where width might be negative due to scales
+            .attr("width", d => Math.max(0, x(d.x1) - x(d.x0) - 1)) 
+            .attr("height", d => height - y(d.length));
+
+        // Add frequency labels on top of bars
+        bar.append("text")
+            .attr("dy", ".75em")
+            .attr("y", -15)
+            .attr("x", d => (x(d.x1) - x(d.x0)) / 2)
+            .text(d => d.length > 0 ? d.length : "");
+    }
+
+    function drawBoxplot(data) {
+        // Clear previous chart
+        d3.select("#boxplot svg").remove();
+
+        const margin = {top: 20, right: 30, bottom: 40, left: 40},
+              width = 800 - margin.left - margin.right,
+              height = 150 - margin.top - margin.bottom;
+
+        const svg = d3.select("#boxplot")
+          .append("svg")
+            .attr("viewBox", `0 0 ${width + margin.left + margin.right} ${height + margin.top + margin.bottom}`)
+          .append("g")
+            .attr("transform", `translate(${margin.left},${margin.top})`);
+
+        // Compute summary statistics
+        const sorted = [...data].sort(d3.ascending);
+        const q1 = d3.quantile(sorted, 0.25);
+        const median = d3.median(sorted);
+        const q3 = d3.quantile(sorted, 0.75);
+        const min = d3.min(data);
+        const max = d3.max(data);
+
+        // X Axis matches histogram for easy comparison
+        const x = d3.scaleLinear()
+            .domain([min - 2, max + 2])
+            .range([0, width]);
+
+        svg.append("g")
+            .attr("transform", `translate(0,${height})`)
+            .call(d3.axisBottom(x));
+
+        const center = height / 2;
+        const boxHeight = 40;
+
+        // Draw main horizontal whisker line
+        svg.append("line")
+            .attr("class", "whisker")
+            .attr("x1", x(min))
+            .attr("x2", x(max))
+            .attr("y1", center)
+            .attr("y2", center);
+
+        // Draw the Interquartile Range (IQR) Box
+        svg.append("rect")
+            .attr("class", "box")
+            .attr("x", x(q1))
+            .attr("y", center - boxHeight/2)
+            .attr("width", x(q3) - x(q1))
+            .attr("height", boxHeight);
+
+        // Draw vertical lines for min, median, and max
+        const lines = [min, median, max];
+        svg.selectAll(".vertLines")
+            .data(lines)
+            .join("line")
+            .attr("class", "median")
+            .attr("x1", d => x(d))
+            .attr("x2", d => x(d))
+            .attr("y1", center - boxHeight/2)
+            .attr("y2", center + boxHeight/2);
+    }
+</script>
+
+</body>
+</html>
