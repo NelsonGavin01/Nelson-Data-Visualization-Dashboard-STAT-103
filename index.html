@@ -114,32 +114,44 @@
             border-radius: 6px;
             align-items: center;
         }
+
+        /* UPGRADED: Dynamic Interactive Stat Boxes */
         .stat-box {
             text-align: center;
             padding: 10px 0;
             border-radius: 6px;
-            transition: all 0.3s ease;
+            border: 1px solid transparent; /* Prevents layout jump on hover */
+            transition: all 0.2s ease-in-out;
+            cursor: default;
         }
         .stat-label {
             font-size: 0.875rem;
             color: var(--text-muted);
             margin-bottom: 4px;
+            transition: color 0.2s;
         }
         .stat-value {
             font-size: 1.25rem;
             font-weight: bold;
             color: var(--accent-blue-hover);
+            transition: all 0.2s;
         }
 
-        /* Highlight styling for the Median */
-        .highlight-median {
+        /* The Hover Effect */
+        .stat-box:hover {
             background-color: rgba(59, 130, 246, 0.15); 
-            border: 1px solid var(--accent-blue);
-            box-shadow: 0 0 12px rgba(59, 130, 246, 0.4); 
-            transform: scale(1.08); 
+            border-color: var(--accent-blue);
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3); 
+            transform: translateY(-2px) scale(1.02); /* Subtle lift and grow */
         }
-        .highlight-median .stat-value { color: #93c5fd; font-size: 1.4rem; }
-        .highlight-median .stat-label { color: var(--text-main); font-weight: bold; }
+        .stat-box:hover .stat-value { 
+            color: #93c5fd; 
+            font-size: 1.3rem; 
+        }
+        .stat-box:hover .stat-label { 
+            color: var(--text-main); 
+            font-weight: bold; 
+        }
 
         .chart-container {
             margin-top: 30px;
@@ -147,10 +159,10 @@
             border-radius: 6px;
             padding: 15px;
             background: var(--bg-page);
-            position: relative; /* For tooltip positioning context if needed */
+            position: relative; 
         }
 
-        /* Bin Slider Styling */
+        /* PREMIUM BIN SLIDER STYLING */
         .slider-header {
             display: flex;
             justify-content: space-between;
@@ -158,10 +170,36 @@
             margin-bottom: 15px;
         }
         input[type=range] {
-            cursor: pointer;
-            vertical-align: middle;
+            -webkit-appearance: none;
+            width: 150px;
+            background: transparent;
             margin-left: 10px;
-            accent-color: var(--accent-blue);
+            vertical-align: middle;
+        }
+        input[type=range]:focus {
+            outline: none;
+        }
+        input[type=range]::-webkit-slider-runnable-track {
+            width: 100%;
+            height: 6px;
+            cursor: pointer;
+            background: #4b5563;
+            border-radius: 3px;
+        }
+        input[type=range]::-webkit-slider-thumb {
+            height: 18px;
+            width: 18px;
+            border-radius: 50%;
+            background: var(--accent-blue);
+            cursor: pointer;
+            -webkit-appearance: none;
+            margin-top: -6px;
+            box-shadow: 0 0 8px rgba(59, 130, 246, 0.6);
+            transition: transform 0.1s;
+        }
+        input[type=range]::-webkit-slider-thumb:hover {
+            transform: scale(1.2);
+            background: var(--accent-blue-hover);
         }
 
         /* DARK MODE D3.JS SVG STYLING */
@@ -181,7 +219,7 @@
             font-size: 12px;
             font-weight: bold;
             text-anchor: middle;
-            pointer-events: none; /* Don't interfere with tooltips */
+            pointer-events: none; 
         }
 
         /* Density Curve */
@@ -190,24 +228,24 @@
             stroke: var(--accent-orange);
             stroke-width: 3px;
             stroke-linejoin: round;
-            pointer-events: none; /* Let hovers pass through to bars */
+            pointer-events: none; 
         }
 
         /* Boxplot Elements */
         .box { fill: #1e3a8a; stroke: var(--accent-blue-hover); stroke-width: 2px; }
         .whisker, .median { stroke: var(--accent-blue-hover); stroke-width: 2px; }
         
-        /* NEW: Hover Tooltip Styling */
+        /* Hover Tooltip Styling */
         .d3-tooltip {
             position: absolute;
             text-align: left;
             padding: 10px 14px;
             font-size: 13px;
-            background: rgba(17, 24, 39, 0.95); /* Deep dark background */
+            background: rgba(17, 24, 39, 0.95); 
             color: #fff;
             border: 1px solid var(--accent-blue);
             border-radius: 6px;
-            pointer-events: none; /* Prevent flickering */
+            pointer-events: none; 
             opacity: 0;
             z-index: 100;
             box-shadow: 0 4px 10px rgba(0,0,0,0.5);
@@ -261,7 +299,6 @@
 <script>
     const tooltip = d3.select("#tooltip");
 
-    // Centralized function to get and clean data
     function getParsedData() {
         const inputRaw = document.getElementById('dataInput').value;
         return inputRaw.split(',')
@@ -269,15 +306,12 @@
             .filter(d => !isNaN(d));
     }
 
-    // Run initially
     processData();
 
-    // Event Listener for the Bin Slider
     document.getElementById('binSlider').addEventListener('input', function(e) {
         document.getElementById('binCountDisplay').innerText = e.target.value;
         const data = getParsedData();
         if(data.length > 0) {
-            // Re-draw histogram without the bouncy entry animation for smooth dragging
             drawHistogram(data, parseInt(e.target.value), false); 
         }
     });
@@ -317,14 +351,13 @@
         };
         const statEntries = Object.entries(stats);
 
-        // Fetch current active bins from slider
         const currentBins = parseInt(document.getElementById('binSlider').value);
         const x = d3.scaleLinear().domain([d3.min(data) - 2, d3.max(data) + 2]);
         const histogram = d3.bin().domain(x.domain()).thresholds(currentBins);
         const bins = histogram(data);
 
         let csvRows = [];
-        csvRows.push("sep=,"); // Force Excel comma separation
+        csvRows.push("sep=,"); 
 
         let headers = ['"Raw Input"', '""', '"Statistic Category"', '"Statistic Value"', '""', '"Bin Range (Min to Max)"', '"Frequency Count"'];
         csvRows.push(headers.join(","));
@@ -364,12 +397,11 @@
             return;
         }
 
-        // Reset bin slider visually and logically on new calculation
         document.getElementById('binSlider').value = 10;
         document.getElementById('binCountDisplay').innerText = 10;
 
         calculateStats(data);
-        drawHistogram(data, 10, true); // true triggers the initial entry animation
+        drawHistogram(data, 10, true); 
         drawBoxplot(data, true);
     }
 
@@ -387,8 +419,9 @@
             "Max": d3.max(data)
         };
 
+        // Removed the static class conditional to allow the CSS :hover to work dynamically
         const html = Object.entries(stats).map(([label, value]) => `
-            <div class="stat-box ${label === 'Median' ? 'highlight-median' : ''}">
+            <div class="stat-box">
                 <div class="stat-label">${label}</div>
                 <div class="stat-value">${value}</div>
             </div>
@@ -397,7 +430,6 @@
         document.getElementById('statsOutput').innerHTML = html;
     }
 
-    // Helper functions for Kernel Density Estimation
     function kernelDensityEstimator(kernel, X) {
         return function(V) { return X.map(x => [x, d3.mean(V, v => kernel(x - v))]); };
     }
@@ -405,7 +437,6 @@
         return function(v) { return Math.abs(v /= k) <= 1 ? 0.75 * (1 - v * v) / k : 0; };
     }
 
-    // Main Histogram Draw Logic with Animation Toggle
     function drawHistogram(data, binsCount = 10, animate = false) {
         d3.select("#histogramChart svg").remove();
 
@@ -435,7 +466,6 @@
         const kde = kernelDensityEstimator(kernelEpanechnikov(bandwidth), x.ticks(50));
         const density = kde(data);
 
-        // Adjust KDE scaling based on current bin sizes
         const binWidth = bins.length > 0 ? (bins[0].x1 - bins[0].x0) : 1;
         const scaleFactor = data.length * binWidth;
 
@@ -448,12 +478,10 @@
 
         svg.append("g").call(d3.axisLeft(y).ticks(5));
 
-        // Draw Interactive Bars
         const barGroups = svg.selectAll(".bar")
             .data(bins)
             .join("g")
             .attr("class", "bar")
-            // Group stays at final position
             .attr("transform", d => `translate(${x(d.x0)},${y(d.length)})`);
 
         const rects = barGroups.append("rect")
@@ -474,31 +502,27 @@
                 tooltip.style("opacity", 0);
             });
 
-        // Add text labels
         const labels = barGroups.append("text")
             .attr("dy", ".75em")
             .attr("y", -15)
             .attr("x", d => (x(d.x1) - x(d.x0)) / 2)
             .text(d => d.length > 0 ? d.length : "");
 
-        // Animate Bars
         if (animate) {
             rects.attr("height", 0)
-                 .attr("y", d => height - y(d.length)) // Start from baseline
+                 .attr("y", d => height - y(d.length)) 
                  .transition().duration(800).ease(d3.easeCubicOut)
                  .attr("height", d => height - y(d.length))
-                 .attr("y", 0); // End at group top
+                 .attr("y", 0); 
         } else {
             rects.attr("height", d => height - y(d.length)).attr("y", 0);
         }
 
-        // Draw Density Curve
         const path = svg.append("path")
             .datum(density)
             .attr("class", "density-curve")
             .attr("d", d3.line().curve(d3.curveBasis).x(d => x(d[0])).y(d => y(d[1] * scaleFactor)));
 
-        // Animate Line Drawing
         if (animate) {
             const totalLength = path.node().getTotalLength();
             path.attr("stroke-dasharray", totalLength + " " + totalLength)
@@ -534,7 +558,6 @@
         const center = height / 2;
         const boxHeight = 40;
 
-        // Visual elements to be animated
         const whiskerLine = svg.append("line")
             .attr("class", "whisker")
             .attr("y1", center).attr("y2", center);
@@ -552,7 +575,6 @@
             .attr("y1", center - boxHeight/2)
             .attr("y2", center + boxHeight/2);
 
-        // Invisible Hover Zone for Tooltips
         svg.append("rect")
             .attr("x", x(min) - 10)
             .attr("y", center - boxHeight)
@@ -577,9 +599,7 @@
             })
             .on("mouseout", function() { tooltip.style("opacity", 0); });
 
-        // Animation Logic
         if (animate) {
-            // Expand from median
             whiskerLine.attr("x1", x(median)).attr("x2", x(median))
                 .transition().duration(800).ease(d3.easeCubicOut)
                 .attr("x1", x(min)).attr("x2", x(max));
