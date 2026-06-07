@@ -120,7 +120,7 @@
             text-align: center;
             padding: 10px 0;
             border-radius: 6px;
-            border: 1px solid transparent; /* Prevents layout jump on hover */
+            border: 1px solid transparent; 
             transition: all 0.2s ease-in-out;
             cursor: default;
         }
@@ -142,7 +142,7 @@
             background-color: rgba(59, 130, 246, 0.15); 
             border-color: var(--accent-blue);
             box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3); 
-            transform: translateY(-2px) scale(1.02); /* Subtle lift and grow */
+            transform: translateY(-2px) scale(1.02); 
         }
         .stat-box:hover .stat-value { 
             color: #93c5fd; 
@@ -151,6 +151,15 @@
         .stat-box:hover .stat-label { 
             color: var(--text-main); 
             font-weight: bold; 
+        }
+
+        /* Emphasized Median Styling */
+        .median-highlight {
+            border: 1px solid var(--accent-orange);
+            background-color: rgba(245, 158, 11, 0.05);
+        }
+        .median-highlight .stat-value {
+            color: var(--accent-orange);
         }
 
         .chart-container {
@@ -233,7 +242,8 @@
 
         /* Boxplot Elements */
         .box { fill: #1e3a8a; stroke: var(--accent-blue-hover); stroke-width: 2px; }
-        .whisker, .median { stroke: var(--accent-blue-hover); stroke-width: 2px; }
+        .whisker, .box-lines { stroke: var(--accent-blue-hover); stroke-width: 2px; }
+        .median-line { stroke: var(--accent-orange); stroke-width: 4px; }
         
         /* Hover Tooltip Styling */
         .d3-tooltip {
@@ -331,6 +341,30 @@
         event.target.value = ''; 
     }
 
+    // Function to Calculate Mode
+    function calculateMode(data) {
+        if (data.length === 0) return "None";
+        const frequencyMap = {};
+        let maxFreq = 0;
+        let modes = [];
+
+        data.forEach(val => {
+            frequencyMap[val] = (frequencyMap[val] || 0) + 1;
+            if (frequencyMap[val] > maxFreq) {
+                maxFreq = frequencyMap[val];
+            }
+        });
+
+        if (maxFreq === 1) return "None";
+
+        for (const key in frequencyMap) {
+            if (frequencyMap[key] === maxFreq) {
+                modes.push(Number(key));
+            }
+        }
+        return modes.join(', ');
+    }
+
     function downloadCSV() {
         const data = getParsedData();
         if (data.length === 0) {
@@ -341,8 +375,10 @@
         const sorted = [...data].sort(d3.ascending);
         const stats = {
             "Count (n)": data.length,
-            "Mean": d3.mean(data).toFixed(2),
             "Median": d3.median(data).toFixed(2),
+            "Mean": d3.mean(data).toFixed(2),
+            "Mode": calculateMode(data),
+            "Range": (d3.max(data) - d3.min(data)).toFixed(2),
             "Std Dev": d3.deviation(data) ? d3.deviation(data).toFixed(2) : "0",
             "Min": d3.min(data),
             "Q1": d3.quantile(sorted, 0.25).toFixed(2),
@@ -410,8 +446,10 @@
         
         const stats = {
             "Count (n)": data.length,
-            "Mean": d3.mean(data).toFixed(2),
             "Median": d3.median(data).toFixed(2),
+            "Mean": d3.mean(data).toFixed(2),
+            "Mode": calculateMode(data),
+            "Range": (d3.max(data) - d3.min(data)).toFixed(2),
             "Std Dev": d3.deviation(data) ? d3.deviation(data).toFixed(2) : "0",
             "Min": d3.min(data),
             "Q1": d3.quantile(sorted, 0.25).toFixed(2),
@@ -419,9 +457,8 @@
             "Max": d3.max(data)
         };
 
-        // Removed the static class conditional to allow the CSS :hover to work dynamically
         const html = Object.entries(stats).map(([label, value]) => `
-            <div class="stat-box">
+            <div class="stat-box ${label === 'Median' ? 'median-highlight' : ''}">
                 <div class="stat-label">${label}</div>
                 <div class="stat-value">${value}</div>
             </div>
@@ -567,11 +604,16 @@
             .attr("y", center - boxHeight/2)
             .attr("height", boxHeight);
 
-        const lines = [min, median, max];
-        const vertLines = svg.selectAll(".vertLines")
-            .data(lines)
+        const ends = [min, max];
+        const vertLines = svg.selectAll(".box-lines")
+            .data(ends)
             .join("line")
-            .attr("class", "median")
+            .attr("class", "box-lines")
+            .attr("y1", center - boxHeight/2)
+            .attr("y2", center + boxHeight/2);
+            
+        const medianLine = svg.append("line")
+            .attr("class", "median-line")
             .attr("y1", center - boxHeight/2)
             .attr("y2", center + boxHeight/2);
 
@@ -611,10 +653,16 @@
             vertLines.attr("x1", x(median)).attr("x2", x(median))
                 .transition().duration(800).ease(d3.easeCubicOut)
                 .attr("x1", d => x(d)).attr("x2", d => x(d));
+                
+            medianLine.attr("x1", x(median)).attr("x2", x(median))
+                .transition().duration(800).ease(d3.easeCubicOut)
+                .attr("x1", x(median)).attr("x2", x(median));
+                
         } else {
             whiskerLine.attr("x1", x(min)).attr("x2", x(max));
             iqrBox.attr("x", x(q1)).attr("width", x(q3) - x(q1));
             vertLines.attr("x1", d => x(d)).attr("x2", d => x(d));
+            medianLine.attr("x1", x(median)).attr("x2", x(median));
         }
     }
 </script>
