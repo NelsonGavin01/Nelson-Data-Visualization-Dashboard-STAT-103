@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Nelson STAT 103 Statistics & Data Visualizer</title>
+    <title>Statistics & Data Visualizer - Premium Edition</title>
     <script src="https://d3js.org/d3.v7.min.js"></script>
     <style>
         /* DARK MODE CORE VARIABLES */
@@ -16,7 +16,7 @@
             --border-color: #374151;  
             --accent-blue: #3b82f6;
             --accent-blue-hover: #60a5fa;
-            --accent-orange: #f59e0b; /* For the density curve */
+            --accent-orange: #f59e0b; 
         }
 
         body {
@@ -97,21 +97,11 @@
             box-shadow: 0 0 0 rgba(0,0,0,0) !important;
         }
 
-        .btn-upload {
-            background-color: #059669; 
-            box-shadow: 0 4px 0 #064e3b; 
-        }
-        .btn-upload:hover {
-            background-color: #10b981;
-        }
+        .btn-upload { background-color: #059669; box-shadow: 0 4px 0 #064e3b; }
+        .btn-upload:hover { background-color: #10b981; }
 
-        .btn-download {
-            background-color: #4b5563; 
-            box-shadow: 0 4px 0 #111827; 
-        }
-        .btn-download:hover {
-            background-color: #6b7280;
-        }
+        .btn-download { background-color: #4b5563; box-shadow: 0 4px 0 #111827; }
+        .btn-download:hover { background-color: #6b7280; }
 
         .stats-grid {
             display: grid;
@@ -141,21 +131,15 @@
             color: var(--accent-blue-hover);
         }
 
-        /* NEW: Highlight styling for the Median */
+        /* Highlight styling for the Median */
         .highlight-median {
-            background-color: rgba(59, 130, 246, 0.15); /* Slight blue tint */
+            background-color: rgba(59, 130, 246, 0.15); 
             border: 1px solid var(--accent-blue);
-            box-shadow: 0 0 12px rgba(59, 130, 246, 0.4); /* Glow effect */
-            transform: scale(1.08); /* Pop out slightly */
+            box-shadow: 0 0 12px rgba(59, 130, 246, 0.4); 
+            transform: scale(1.08); 
         }
-        .highlight-median .stat-value {
-            color: #93c5fd; /* Even brighter blue text */
-            font-size: 1.4rem;
-        }
-        .highlight-median .stat-label {
-            color: var(--text-main); /* Brighter label */
-            font-weight: bold;
-        }
+        .highlight-median .stat-value { color: #93c5fd; font-size: 1.4rem; }
+        .highlight-median .stat-label { color: var(--text-main); font-weight: bold; }
 
         .chart-container {
             margin-top: 30px;
@@ -163,39 +147,41 @@
             border-radius: 6px;
             padding: 15px;
             background: var(--bg-page);
+            position: relative; /* For tooltip positioning context if needed */
+        }
+
+        /* Bin Slider Styling */
+        .slider-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        input[type=range] {
+            cursor: pointer;
+            vertical-align: middle;
+            margin-left: 10px;
+            accent-color: var(--accent-blue);
         }
 
         /* DARK MODE D3.JS SVG STYLING */
-        svg {
-            width: 100%;
-            height: auto;
-            overflow: visible;
-        }
-        
-        .domain, .tick line {
-            stroke: #4b5563; 
-        }
-        .tick text {
-            fill: #9ca3af; 
-            font-family: system-ui, sans-serif;
-            font-size: 11px;
-        }
+        svg { width: 100%; height: auto; overflow: visible; }
+        .domain, .tick line { stroke: #4b5563; }
+        .tick text { fill: #9ca3af; font-family: system-ui, sans-serif; font-size: 11px; }
 
         /* Histogram Bars */
         .bar rect {
             fill: var(--accent-blue);
-            transition: fill 0.2s;
-            opacity: 0.85; /* Slight transparency so curve stands out */
+            opacity: 0.85; 
+            cursor: pointer;
         }
-        .bar rect:hover {
-            fill: var(--accent-blue-hover);
-            opacity: 1;
-        }
+        .bar rect:hover { opacity: 1; }
         .bar text {
             fill: var(--text-main);
             font-size: 12px;
             font-weight: bold;
             text-anchor: middle;
+            pointer-events: none; /* Don't interfere with tooltips */
         }
 
         /* Density Curve */
@@ -204,18 +190,32 @@
             stroke: var(--accent-orange);
             stroke-width: 3px;
             stroke-linejoin: round;
+            pointer-events: none; /* Let hovers pass through to bars */
         }
 
         /* Boxplot Elements */
-        .box {
-            fill: #1e3a8a; 
-            stroke: var(--accent-blue-hover);
-            stroke-width: 2px;
+        .box { fill: #1e3a8a; stroke: var(--accent-blue-hover); stroke-width: 2px; }
+        .whisker, .median { stroke: var(--accent-blue-hover); stroke-width: 2px; }
+        
+        /* NEW: Hover Tooltip Styling */
+        .d3-tooltip {
+            position: absolute;
+            text-align: left;
+            padding: 10px 14px;
+            font-size: 13px;
+            background: rgba(17, 24, 39, 0.95); /* Deep dark background */
+            color: #fff;
+            border: 1px solid var(--accent-blue);
+            border-radius: 6px;
+            pointer-events: none; /* Prevent flickering */
+            opacity: 0;
+            z-index: 100;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+            transform: translate(-50%, -110%);
+            line-height: 1.5;
+            transition: opacity 0.2s ease;
         }
-        .whisker, .median {
-            stroke: var(--accent-blue-hover);
-            stroke-width: 2px;
-        }
+        .d3-tooltip strong { color: var(--accent-blue-hover); }
     </style>
 </head>
 <body>
@@ -235,21 +235,52 @@
 
     <p style="color: var(--text-muted); margin-bottom: 8px;">Enter a comma-separated list of numbers below:</p>
     <textarea id="dataInput">12, 15, 8, 10, 20, 25, 14, 18, 5, 30, 22, 16, 11, 9, 24, 19, 13, 17, 21, 28, 7, 26, 23, 27, 6, 29, 15, 12, 18, 20</textarea>
-    <button class="calc-button" onclick="processData()">Calculate & Update Charts</button>
+    <button class="calc-button" onclick="processData()">Calculate & Animate Charts</button>
 
     <div class="stats-grid" id="statsOutput"></div>
 
     <div class="chart-container" id="histogram">
-        <h3>Histogram & Density Curve</h3>
+        <div class="slider-header">
+            <h3 style="margin: 0;">Histogram & Density Curve</h3>
+            <div style="font-size: 14px; color: var(--text-muted);">
+                <label for="binSlider">Bins: <span id="binCountDisplay" style="color: var(--text-main); font-weight: bold;">10</span></label>
+                <input type="range" id="binSlider" min="5" max="30" value="10">
+            </div>
+        </div>
+        <div id="histogramChart"></div>
     </div>
     
     <div class="chart-container" id="boxplot">
         <h3>Boxplot (Data Spread)</h3>
+        <div id="boxplotChart"></div>
     </div>
 </div>
 
+<div id="tooltip" class="d3-tooltip"></div>
+
 <script>
+    const tooltip = d3.select("#tooltip");
+
+    // Centralized function to get and clean data
+    function getParsedData() {
+        const inputRaw = document.getElementById('dataInput').value;
+        return inputRaw.split(',')
+            .map(d => parseFloat(d.trim()))
+            .filter(d => !isNaN(d));
+    }
+
+    // Run initially
     processData();
+
+    // Event Listener for the Bin Slider
+    document.getElementById('binSlider').addEventListener('input', function(e) {
+        document.getElementById('binCountDisplay').innerText = e.target.value;
+        const data = getParsedData();
+        if(data.length > 0) {
+            // Re-draw histogram without the bouncy entry animation for smooth dragging
+            drawHistogram(data, parseInt(e.target.value), false); 
+        }
+    });
 
     function handleFileUpload(event) {
         const file = event.target.files[0];
@@ -267,11 +298,7 @@
     }
 
     function downloadCSV() {
-        const inputRaw = document.getElementById('dataInput').value;
-        const data = inputRaw.split(',')
-            .map(d => parseFloat(d.trim()))
-            .filter(d => !isNaN(d));
-            
+        const data = getParsedData();
         if (data.length === 0) {
             alert("No valid data to download.");
             return;
@@ -290,12 +317,14 @@
         };
         const statEntries = Object.entries(stats);
 
+        // Fetch current active bins from slider
+        const currentBins = parseInt(document.getElementById('binSlider').value);
         const x = d3.scaleLinear().domain([d3.min(data) - 2, d3.max(data) + 2]);
-        const histogram = d3.bin().domain(x.domain()).thresholds(x.ticks(10));
+        const histogram = d3.bin().domain(x.domain()).thresholds(currentBins);
         const bins = histogram(data);
 
         let csvRows = [];
-        csvRows.push("sep=,");
+        csvRows.push("sep=,"); // Force Excel comma separation
 
         let headers = ['"Raw Input"', '""', '"Statistic Category"', '"Statistic Value"', '""', '"Bin Range (Min to Max)"', '"Frequency Count"'];
         csvRows.push(headers.join(","));
@@ -310,15 +339,8 @@
             let colBinFreq  = i < bins.length ? bins[i].length : "";
 
             let row = [
-                `"${colData}"`, 
-                `""`,            
-                `"${colStatName}"`, 
-                `"${colStatVal}"`, 
-                `""`,            
-                `"${colBinRange}"`, 
-                `"${colBinFreq}"`
+                `"${colData}"`, `""`, `"${colStatName}"`, `"${colStatVal}"`, `""`, `"${colBinRange}"`, `"${colBinFreq}"`
             ];
-            
             csvRows.push(row.join(","));
         }
 
@@ -336,19 +358,19 @@
     }
 
     function processData() {
-        const inputRaw = document.getElementById('dataInput').value;
-        const data = inputRaw.split(',')
-            .map(d => parseFloat(d.trim()))
-            .filter(d => !isNaN(d)); 
-
+        const data = getParsedData(); 
         if (data.length === 0) {
             alert("Please enter valid numerical data separated by commas.");
             return;
         }
 
+        // Reset bin slider visually and logically on new calculation
+        document.getElementById('binSlider').value = 10;
+        document.getElementById('binCountDisplay').innerText = 10;
+
         calculateStats(data);
-        drawHistogram(data);
-        drawBoxplot(data);
+        drawHistogram(data, 10, true); // true triggers the initial entry animation
+        drawBoxplot(data, true);
     }
 
     function calculateStats(data) {
@@ -365,7 +387,6 @@
             "Max": d3.max(data)
         };
 
-        // UPDATED: Target 'Median' instead of 'Mean' for the highlight class
         const html = Object.entries(stats).map(([label, value]) => `
             <div class="stat-box ${label === 'Median' ? 'highlight-median' : ''}">
                 <div class="stat-label">${label}</div>
@@ -378,24 +399,21 @@
 
     // Helper functions for Kernel Density Estimation
     function kernelDensityEstimator(kernel, X) {
-        return function(V) {
-            return X.map(x => [x, d3.mean(V, v => kernel(x - v))]);
-        };
+        return function(V) { return X.map(x => [x, d3.mean(V, v => kernel(x - v))]); };
     }
     function kernelEpanechnikov(k) {
-        return function(v) {
-            return Math.abs(v /= k) <= 1 ? 0.75 * (1 - v * v) / k : 0;
-        };
+        return function(v) { return Math.abs(v /= k) <= 1 ? 0.75 * (1 - v * v) / k : 0; };
     }
 
-    function drawHistogram(data) {
-        d3.select("#histogram svg").remove();
+    // Main Histogram Draw Logic with Animation Toggle
+    function drawHistogram(data, binsCount = 10, animate = false) {
+        d3.select("#histogramChart svg").remove();
 
         const margin = {top: 20, right: 30, bottom: 40, left: 40},
               width = 800 - margin.left - margin.right,
               height = 300 - margin.top - margin.bottom;
 
-        const svg = d3.select("#histogram")
+        const svg = d3.select("#histogramChart")
           .append("svg")
             .attr("viewBox", `0 0 ${width + margin.left + margin.right} ${height + margin.top + margin.bottom}`)
           .append("g")
@@ -409,25 +427,18 @@
             .attr("transform", `translate(0,${height})`)
             .call(d3.axisBottom(x));
 
-        const histogram = d3.bin()
-            .domain(x.domain())
-            .thresholds(x.ticks(10)); 
-
+        const histogram = d3.bin().domain(x.domain()).thresholds(binsCount);
         const bins = histogram(data);
 
-        // Calculate dynamic bandwidth for the KDE based on data spread
         const std = d3.deviation(data) || 1;
         const bandwidth = 1.06 * std * Math.pow(data.length, -0.2);
-        
-        // Generate density data
         const kde = kernelDensityEstimator(kernelEpanechnikov(bandwidth), x.ticks(50));
         const density = kde(data);
 
-        // Determine scaling factor so density curve aligns with frequency counts
+        // Adjust KDE scaling based on current bin sizes
         const binWidth = bins.length > 0 ? (bins[0].x1 - bins[0].x0) : 1;
         const scaleFactor = data.length * binWidth;
 
-        // Set Y axis domain to accommodate both the highest bar and the highest point of the curve
         const maxBinFreq = d3.max(bins, d => d.length);
         const maxDensityFreq = d3.max(density, d => d[1] * scaleFactor) || 0;
         
@@ -435,46 +446,76 @@
             .range([height, 0])
             .domain([0, Math.max(maxBinFreq, maxDensityFreq) + 1]);
 
-        svg.append("g")
-            .call(d3.axisLeft(y).ticks(5));
+        svg.append("g").call(d3.axisLeft(y).ticks(5));
 
-        // Draw the Histogram Bars
-        const bar = svg.selectAll(".bar")
+        // Draw Interactive Bars
+        const barGroups = svg.selectAll(".bar")
             .data(bins)
             .join("g")
             .attr("class", "bar")
+            // Group stays at final position
             .attr("transform", d => `translate(${x(d.x0)},${y(d.length)})`);
 
-        bar.append("rect")
+        const rects = barGroups.append("rect")
             .attr("x", 1)
-            .attr("width", d => Math.max(0, x(d.x1) - x(d.x0) - 1)) 
-            .attr("height", d => height - y(d.length));
+            .attr("width", d => Math.max(0, x(d.x1) - x(d.x0) - 1))
+            .on("mouseover", function(event, d) {
+                d3.select(this).style("fill", "var(--accent-blue-hover)");
+                tooltip.style("opacity", 1)
+                       .html(`Range: <strong>${d.x0.toFixed(1)} to ${d.x1.toFixed(1)}</strong><br/>Frequency: <strong>${d.length}</strong>`)
+                       .style("left", (event.pageX) + "px")
+                       .style("top", (event.pageY) + "px");
+            })
+            .on("mousemove", function(event) {
+                tooltip.style("left", (event.pageX) + "px").style("top", (event.pageY) + "px");
+            })
+            .on("mouseout", function() {
+                d3.select(this).style("fill", "var(--accent-blue)");
+                tooltip.style("opacity", 0);
+            });
 
-        bar.append("text")
+        // Add text labels
+        const labels = barGroups.append("text")
             .attr("dy", ".75em")
             .attr("y", -15)
             .attr("x", d => (x(d.x1) - x(d.x0)) / 2)
             .text(d => d.length > 0 ? d.length : "");
 
-        // Draw the Density Curve
-        svg.append("path")
+        // Animate Bars
+        if (animate) {
+            rects.attr("height", 0)
+                 .attr("y", d => height - y(d.length)) // Start from baseline
+                 .transition().duration(800).ease(d3.easeCubicOut)
+                 .attr("height", d => height - y(d.length))
+                 .attr("y", 0); // End at group top
+        } else {
+            rects.attr("height", d => height - y(d.length)).attr("y", 0);
+        }
+
+        // Draw Density Curve
+        const path = svg.append("path")
             .datum(density)
             .attr("class", "density-curve")
-            .attr("d", d3.line()
-                .curve(d3.curveBasis) 
-                .x(d => x(d[0]))
-                .y(d => y(d[1] * scaleFactor))
-            );
+            .attr("d", d3.line().curve(d3.curveBasis).x(d => x(d[0])).y(d => y(d[1] * scaleFactor)));
+
+        // Animate Line Drawing
+        if (animate) {
+            const totalLength = path.node().getTotalLength();
+            path.attr("stroke-dasharray", totalLength + " " + totalLength)
+                .attr("stroke-dashoffset", totalLength)
+                .transition().duration(1200).ease(d3.easeCubicInOut)
+                .attr("stroke-dashoffset", 0);
+        }
     }
 
-    function drawBoxplot(data) {
-        d3.select("#boxplot svg").remove();
+    function drawBoxplot(data, animate = false) {
+        d3.select("#boxplotChart svg").remove();
 
         const margin = {top: 20, right: 30, bottom: 40, left: 40},
               width = 800 - margin.left - margin.right,
               height = 150 - margin.top - margin.bottom;
 
-        const svg = d3.select("#boxplot")
+        const svg = d3.select("#boxplotChart")
           .append("svg")
             .attr("viewBox", `0 0 ${width + margin.left + margin.right} ${height + margin.top + margin.bottom}`)
           .append("g")
@@ -487,40 +528,74 @@
         const min = d3.min(data);
         const max = d3.max(data);
 
-        const x = d3.scaleLinear()
-            .domain([min - 2, max + 2])
-            .range([0, width]);
-
-        svg.append("g")
-            .attr("transform", `translate(0,${height})`)
-            .call(d3.axisBottom(x));
+        const x = d3.scaleLinear().domain([min - 2, max + 2]).range([0, width]);
+        svg.append("g").attr("transform", `translate(0,${height})`).call(d3.axisBottom(x));
 
         const center = height / 2;
         const boxHeight = 40;
 
-        svg.append("line")
+        // Visual elements to be animated
+        const whiskerLine = svg.append("line")
             .attr("class", "whisker")
-            .attr("x1", x(min))
-            .attr("x2", x(max))
-            .attr("y1", center)
-            .attr("y2", center);
+            .attr("y1", center).attr("y2", center);
 
-        svg.append("rect")
+        const iqrBox = svg.append("rect")
             .attr("class", "box")
-            .attr("x", x(q1))
             .attr("y", center - boxHeight/2)
-            .attr("width", x(q3) - x(q1))
             .attr("height", boxHeight);
 
         const lines = [min, median, max];
-        svg.selectAll(".vertLines")
+        const vertLines = svg.selectAll(".vertLines")
             .data(lines)
             .join("line")
             .attr("class", "median")
-            .attr("x1", d => x(d))
-            .attr("x2", d => x(d))
             .attr("y1", center - boxHeight/2)
             .attr("y2", center + boxHeight/2);
+
+        // Invisible Hover Zone for Tooltips
+        svg.append("rect")
+            .attr("x", x(min) - 10)
+            .attr("y", center - boxHeight)
+            .attr("width", x(max) - x(min) + 20)
+            .attr("height", boxHeight * 2)
+            .attr("fill", "transparent")
+            .style("cursor", "crosshair")
+            .on("mouseover", function(event) {
+                tooltip.style("opacity", 1)
+                       .html(`
+                        Max: <strong>${max.toFixed(2)}</strong><br/>
+                        Q3: <strong>${q3.toFixed(2)}</strong><br/>
+                        Median: <strong>${median.toFixed(2)}</strong><br/>
+                        Q1: <strong>${q1.toFixed(2)}</strong><br/>
+                        Min: <strong>${min.toFixed(2)}</strong>
+                       `)
+                       .style("left", (event.pageX) + "px")
+                       .style("top", (event.pageY) + "px");
+            })
+            .on("mousemove", function(event) {
+                tooltip.style("left", (event.pageX) + "px").style("top", (event.pageY) + "px");
+            })
+            .on("mouseout", function() { tooltip.style("opacity", 0); });
+
+        // Animation Logic
+        if (animate) {
+            // Expand from median
+            whiskerLine.attr("x1", x(median)).attr("x2", x(median))
+                .transition().duration(800).ease(d3.easeCubicOut)
+                .attr("x1", x(min)).attr("x2", x(max));
+
+            iqrBox.attr("x", x(median)).attr("width", 0)
+                .transition().duration(800).ease(d3.easeCubicOut)
+                .attr("x", x(q1)).attr("width", x(q3) - x(q1));
+
+            vertLines.attr("x1", x(median)).attr("x2", x(median))
+                .transition().duration(800).ease(d3.easeCubicOut)
+                .attr("x1", d => x(d)).attr("x2", d => x(d));
+        } else {
+            whiskerLine.attr("x1", x(min)).attr("x2", x(max));
+            iqrBox.attr("x", x(q1)).attr("width", x(q3) - x(q1));
+            vertLines.attr("x1", d => x(d)).attr("x2", d => x(d));
+        }
     }
 </script>
 
